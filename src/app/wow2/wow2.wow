@@ -1,0 +1,52 @@
+"use client";
+import { useEffect, useState } from 'react';
+import axios from 'axios';
+
+const fetchAssignments = async (terminal: string) => {
+  const response = await axios.get(`/api/assignments?terminal=${terminal}`);
+  return response.data;
+};
+
+const updateAssignment = async (id: number, status: string, terminal: string) => {
+  await axios.put('/api/assignments', { id, status, terminal });
+};
+
+const Home = () => {
+  const [assignments, setAssignments] = useState<any[]>([]);
+  const terminal = typeof window !== 'undefined' ? window.location.pathname.includes('terminal2') ? 'terminal2' : 'terminal1' : 'terminal1';
+
+  useEffect(() => {
+    const loadAssignments = async () => {
+      const data = await fetchAssignments(terminal);
+      setAssignments(data);
+    };
+
+    loadAssignments();
+    const intervalId = setInterval(() => loadAssignments(), 5000); // Polling every 5 seconds
+
+    return () => clearInterval(intervalId);
+  }, [terminal]);
+
+  const handleStatusChange = async (id: number, newStatus: string) => {
+    await updateAssignment(id, newStatus, terminal);
+  };
+
+  return (
+    <div>
+      <h1>Terminal {terminal === 'terminal1' ? '1' : '2'}</h1>
+      <ul>
+        {assignments.map((assignment: any) => (
+          <li key={assignment.id}>
+            Van ID: {assignment.van_id} - Status: {assignment.status}
+            <button onClick={() => handleStatusChange(assignment.id, 'queued')}>Queue</button>
+            <button onClick={() => handleStatusChange(assignment.id, 'waiting')}>Wait</button>
+            <button onClick={() => handleStatusChange(assignment.id, 'departed')}>Depart</button>
+            <button onClick={() => handleStatusChange(assignment.id, 'arrived')}>Arrive</button>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+};
+
+export default Home;
